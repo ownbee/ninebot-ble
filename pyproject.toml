@@ -1,0 +1,41 @@
+[project]
+name = "ninebot-ble"
+version = "0.0.1"
+authors = [
+  { name="ownbee" },
+]
+description = "Ninebot scooter BLE client"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+urls.homepage = "https://github.com/ownbee/ninebot-ble"
+dependencies = [
+  "bleak",
+  "bleak-retry-connector",
+  "bluetooth-sensor-state-data",
+  "bluetooth-data-tools",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "mypy",
+]
+
+[project.scripts]
+ninebot-ble = "ninebot_ble.__main__:entrypoint"
+
+[tool.mypy]
+files = "src"
+python_version = "3.10"
+strict = true
+show_error_codes = true
+enable_error_code = ["ignore-without-code", "truthy-bool", "redundant-expr"]
+
+[tool.black]
+line-length = 120
+skip-string-normalization = true
