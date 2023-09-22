@@ -6,8 +6,8 @@ It is primarely using the BLE UART characteristic for communication with the sco
 using the new encrypted protocol using [miauth](https://github.com/dnandha/miauth) library. Old
 scooter firmwares might therefore not work.
 
-The projects primary objective is to support Home Assistant integration but will probably work for
-more use-cases as well.
+The projects primary objective is to support Home Assistant integration but will work for more
+use-cases as well.
 
 ## Usage
 
@@ -17,9 +17,13 @@ Installation:
 pip install ninebot-ble
 ```
 
-A client for testing purposes are shipped:
+A command-line client for testing purposes are shipped:
 
 ```
-# Dump all memory registers
-ninebot-ble --all
+ninebot-ble --help
 ```
+
+## Troubleshoot
+
+I only have access to a Ninebot F-series scooter, if you have problems with other models, I will
+need help with debugging.

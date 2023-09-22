@@ -19,7 +19,7 @@ class CtrlIdx(StrEnum):
     NB_INF_BOOL_LIMITSPEED = "Speed limited"
     NB_INF_BOOL_LOCK = "Scooter locked"
     NB_INF_BOOL_BEEP = "Buzzer alarm activated"
-    NB_INF_BOOL_BAT2_IN = "Battery 2 inserted"
+    NB_INF_BOOL_BAT2_IN = "External battery inserted"
     NB_INF_BOOL_ACT = "Scooter activated"
     # NB_INF_BTC_1 = "Volume of storage battery 1"
     # NB_INF_BTC_2 = "Volume of storage battery 2"

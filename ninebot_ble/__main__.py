@@ -1,15 +1,22 @@
+"""Command-line client for reading Ninebot scooter registers
+
+Running with no arguments will start the ninebot sensor and dump all data.
+
+It is also possible to only read specific registers using flags, see --help.
+"""
+
+import argparse
 import asyncio
 import logging
-from bleak import BleakScanner
-from bleak.backends.device import BLEDevice
-from bleak.backends.scanner import AdvertisementData
-from ninebot_ble import NinebotBleSensor, BmsIdx, CtrlIdx, iter_register, NinebotClient, get_register_desc
-from home_assistant_bluetooth import BluetoothServiceInfo
 import time
 from typing import Any
 
-import argparse
+from bleak import BleakScanner
+from bleak.backends.device import BLEDevice
+from bleak.backends.scanner import AdvertisementData
+from home_assistant_bluetooth import BluetoothServiceInfo
 
+from ninebot_ble import BmsIdx, CtrlIdx, NinebotBleSensor, NinebotClient, get_register_desc, iter_register
 
 logger = logging.getLogger(__name__)
 
@@ -50,9 +57,7 @@ async def main() -> None:
     logging.getLogger("bleak.backends.bluezdbus.manager").level = logging.WARNING
     logging.getLogger("bleak.backends.bluezdbus.client").level = logging.WARNING
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-a", "--all", action="store_true", help="read all register indices")
-    parser.add_argument("--sensor-run", action="store_true", help="start and dump sensor")
+    parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter, description=__doc__)
 
     arg_mapping: dict[str, BmsIdx | CtrlIdx] = {}
     for idx in iter_register(CtrlIdx, BmsIdx):
@@ -64,43 +69,43 @@ async def main() -> None:
 
     device, advertisement = await find_scooter()
 
-    if not args.sensor_run:
+    indices: list[BmsIdx | CtrlIdx] = []
+    for idx_arg, idx in arg_mapping.items():
+        if args.__dict__.get(idx_arg):
+            indices.append(idx)
+
+    if len(indices) > 0:
         client = NinebotClient()
         try:
             await client.connect(device)
-            if args.all:
-                for idx in iter_register(CtrlIdx, BmsIdx):
-                    val = await client.read_reg(idx)
-                    desc = get_register_desc(idx)
-                    dump_reg(str(idx), val, desc.unit or "")
-            else:
-                for idx_arg, idx in arg_mapping.items():
-                    if args.__dict__.get(idx_arg):
-                        val = await client.read_reg(idx)
-                        desc = get_register_desc(idx)
-                        dump_reg(str(idx), val, desc.unit or "")
+            for idx in indices:
+                val = await client.read_reg(idx)
+                desc = get_register_desc(idx)
+                dump_reg(str(idx), val, desc.unit or "")
         finally:
             await client.disconnect()
         return
-
-    nb = NinebotBleSensor()
-    try:
-        nb.update(BluetoothServiceInfo.from_advertisement(device, advertisement, "Unknown"))
-        update = await nb.async_poll(device)
-        print("Title:       ", update.title)
-        print("Name:        ", update.devices[None].name)
-        print("Model:       ", update.devices[None].model)
-        print("Manufacturer:", update.devices[None].manufacturer)
-        print("SW version:  ", update.devices[None].sw_version)
-        print("HW version:  ", update.devices[None].hw_version)
-        print("-" * 100)
-        for dk, dv in update.entity_values.items():
-            unit = str(update.entity_descriptions[dk].native_unit_of_measurement)
-            if not unit:
-                unit = ""
-            print(f"{dv.name:<40}: {dv.native_value} {unit}")
-    finally:
-        await nb.disconnect()
+    else:
+        nb = NinebotBleSensor()
+        try:
+            nb.update(BluetoothServiceInfo.from_advertisement(device, advertisement, "Unknown"))
+            update = await nb.async_poll(device)
+            print("Title:       ", update.title)
+            print("Name:        ", update.devices[None].name)
+            print("Model:       ", update.devices[None].model)
+            print("Manufacturer:", update.devices[None].manufacturer)
+            print("SW version:  ", update.devices[None].sw_version)
+            print("HW version:  ", update.devices[None].hw_version)
+            print("-" * 20 + " Registers " + "-" * 20)
+            for dk, dv in update.entity_values.items():
+                unit = update.entity_descriptions[dk].native_unit_of_measurement
+                if not unit:
+                    unit_str = ""
+                else:
+                    unit_str = str(unit)
+                print(f"{dv.name:<40}: {dv.native_value} {unit_str}")
+        finally:
+            await nb.disconnect()
 
 
 def entrypoint() -> None:
