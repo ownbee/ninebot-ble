@@ -16,7 +16,7 @@ from .register import BmsIdx, CtrlIdx, get_register_desc, iter_register
 from .sensor import NinebotBleSensor
 from .transport import NinebotClient, Packet, Command, DeviceId
 
-__version__ = "0.0.1"
+__version__ = "0.0.3"
 
 __all__ = [
     "NinebotBleSensor",
