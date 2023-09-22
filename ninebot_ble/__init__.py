@@ -14,13 +14,16 @@ from sensor_state_data import (
 
 from .register import BmsIdx, CtrlIdx, get_register_desc, iter_register
 from .sensor import NinebotBleSensor
-from .transport import NinebotClient
+from .transport import NinebotClient, Packet, Command, DeviceId
 
 __version__ = "0.0.1"
 
 __all__ = [
     "NinebotBleSensor",
     "NinebotClient",
+    "Packet",
+    "Command",
+    "DeviceId",
     "BmsIdx",
     "CtrlIdx",
     "iter_register",
