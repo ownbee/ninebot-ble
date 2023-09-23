@@ -1,6 +1,6 @@
 [project]
 name = "ninebot-ble"
-version = "0.0.4"
+version = "0.0.5"
 authors = [
   { name="ownbee" },
 ]
