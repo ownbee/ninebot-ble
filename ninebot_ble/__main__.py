@@ -35,8 +35,7 @@ async def find_scooter() -> tuple[BLEDevice, AdvertisementData]:
             while time.time() < deadline:
                 try:
                     dev, adv = scan_queue.get_nowait()
-                    # TODO: Find a better way of finding a ninebot scooter!
-                    if dev.name is not None and "nbscooter" in dev.name.lower():
+                    if 16974 in adv.manufacturer_data:
                         return dev, adv
                 except asyncio.QueueEmpty:
                     await asyncio.sleep(0.1)
