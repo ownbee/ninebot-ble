@@ -60,6 +60,14 @@ class NinebotBleSensor(BluetoothData):
 
         return self._finish_update()
 
+    def supported(self, data: BluetoothServiceInfo) -> bool:
+        """Return True if the device is supported.
+
+        Override.
+        """
+        self._start_update(data)
+        return data.manufacturer_id == 16974
+
     def _start_update(self, service_info: BluetoothServiceInfo) -> None:
         """Update from BLE advertisement data.
 
