@@ -17,7 +17,7 @@ from .sensor import NinebotBleSensor
 from .transport import NinebotClient, Packet, Command, DeviceId
 from .util import async_scooter_scan
 
-__version__ = "0.0.5"
+__version__ = "0.0.6"
 
 __all__ = [
     "NinebotBleSensor",
