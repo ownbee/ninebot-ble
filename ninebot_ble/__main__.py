@@ -8,43 +8,21 @@ It is also possible to only read specific registers using flags, see --help.
 import argparse
 import asyncio
 import logging
-import time
 from typing import Any
 
-from bleak import BleakScanner
-from bleak.backends.device import BLEDevice
-from bleak.backends.scanner import AdvertisementData
 from home_assistant_bluetooth import BluetoothServiceInfo
 
-from ninebot_ble import BmsIdx, CtrlIdx, NinebotBleSensor, NinebotClient, get_register_desc, iter_register
+from ninebot_ble import (
+    BmsIdx,
+    CtrlIdx,
+    NinebotBleSensor,
+    NinebotClient,
+    async_scooter_scan,
+    get_register_desc,
+    iter_register,
+)
 
 logger = logging.getLogger(__name__)
-
-
-async def find_scooter() -> tuple[BLEDevice, AdvertisementData]:
-    """Scans the network for a ninebot scooter."""
-    scan_queue: asyncio.Queue[tuple[BLEDevice, AdvertisementData]] = asyncio.Queue(100)
-
-    async def _on_scan_found(dev: BLEDevice, adv: AdvertisementData) -> None:
-        logger.debug("scan: %s | %s", dev, adv)
-        await scan_queue.put((dev, adv))
-
-    async def scan() -> tuple[BLEDevice, AdvertisementData] | None:
-        async with BleakScanner(scanning_mode="active", detection_callback=_on_scan_found):
-            deadline = time.time() + 30
-            while time.time() < deadline:
-                try:
-                    dev, adv = scan_queue.get_nowait()
-                    if 16974 in adv.manufacturer_data:
-                        return dev, adv
-                except asyncio.QueueEmpty:
-                    await asyncio.sleep(0.1)
-        return None
-
-    result = await scan()
-    if result is None:
-        raise RuntimeError("Unable to find scooter")
-    return result
 
 
 def dump_reg(name: str, val: Any, unit: str) -> None:
@@ -66,7 +44,7 @@ async def main() -> None:
 
     args = parser.parse_args()
 
-    device, advertisement = await find_scooter()
+    device, advertisement = await async_scooter_scan()
 
     indices: list[BmsIdx | CtrlIdx] = []
     for idx_arg, idx in arg_mapping.items():

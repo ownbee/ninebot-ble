@@ -10,7 +10,7 @@ from .register import BmsIdx, CtrlIdx, get_register_desc, iter_register
 from .serial_parser import SerialParser
 from .transport import NinebotClient
 
-logger = logging.getLogger(__name__)
+_LOGGER = logging.getLogger(__name__)
 
 
 class NinebotBleSensor(BluetoothData):
@@ -23,6 +23,7 @@ class NinebotBleSensor(BluetoothData):
         super().__init__()
 
         self.client = NinebotClient()
+        self.device: BLEDevice | None = None
 
     async def disconnect(self) -> None:
         """Disconnect scooter."""
@@ -31,20 +32,23 @@ class NinebotBleSensor(BluetoothData):
 
     async def async_poll(self, device: BLEDevice) -> SensorUpdate:
         """Poll all data from Scooter."""
-        if not self.client.is_connected:
+        print("Connected:", self.client.is_connected)
+        if not self.client.is_connected or self.device is None or self.device != device:
+            await self.client.disconnect()
+            self.client = NinebotClient()
             await self.client.connect(device)
-        assert self.client is not None
+            self.device = device
 
         serial = await self.client.read_reg(CtrlIdx.NB_INF_SN)
         try:
             parsed_sn = SerialParser(serial)
             self.set_title(str(parsed_sn))
-            self.set_device_type(parsed_sn.product_version)
+            self.set_device_type(str(parsed_sn))
             self.set_device_hw_version(
                 f"Rev {parsed_sn.product_revision}, {parsed_sn.production_date.year}/{parsed_sn.production_date.month}"
             )
         except ValueError as e:
-            logger.warn("Failed to parse scooter serial number: %s", e)
+            _LOGGER.warn("Failed to parse scooter serial number: %s", e)
             self.set_title(device.name or device.address)
             self.set_device_type("Ninebot scooter")
 
@@ -73,5 +77,5 @@ class NinebotBleSensor(BluetoothData):
 
         Override.
         """
-        self.set_device_manufacturer("Segway Ninebot")
+        self.set_device_manufacturer("Segway")
         self.set_device_name(service_info.name)

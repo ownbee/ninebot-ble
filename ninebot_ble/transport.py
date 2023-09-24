@@ -17,7 +17,7 @@ from miauth.nb.nbcrypto import NbCrypto
 
 from .register import BmsIdx, CtrlIdx, get_register_desc
 
-logger = logging.getLogger(__name__)
+_LOGGER = logging.getLogger(__name__)
 
 NORDIC_UART_RX_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"
 NORDIC_UART_TX_UUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"
@@ -60,13 +60,13 @@ class Packet:
         target: DeviceId,
         command: Command,
         data_index: int,
-        data_segment: list[int] | bytes | None = None,
+        data: list[int] | bytes | None = None,
     ) -> None:
         self.source = source
         self.target = target
         self.command = command
         self.data_index = data_index
-        self.data_segment = list(data_segment) if data_segment else []
+        self.data_segment = list(data) if data else []
 
     def pack(self) -> bytearray:
         payload = pack(
@@ -83,7 +83,7 @@ class Packet:
             return None
         return Packet(DeviceId(data[3]), DeviceId(data[4]), Command(data[5]), data[6], list(data[7:]))
 
-    def __str__(self):
+    def __str__(self) -> str:
         ds = ""
         if len(self.data_segment) > 0:
             ds = ", data=" + hexlify(bytes(self.data_segment)).upper().decode()
@@ -109,19 +109,19 @@ class NinebotClient:
         """
         self.crypto.set_name(device.name.encode() if device.name else b"Unnamed")
 
-        logger.info("Connecting to %s (%s): ...", device.name, device.address)
+        _LOGGER.info("Connecting to %s (%s): ...", device.name, device.address)
         self.client = await establish_connection(BleakClient, device, device.address)
         await self.client.start_notify(NORDIC_UART_TX_UUID, self._read_callback)
 
-        logger.debug("Authenticating ...")
+        _LOGGER.debug("Authenticating ...")
 
         # Init
         resp = await self.request(Packet(DeviceId.PC, DeviceId.ES_BLE, Command.INIT, 0))
         received_key = resp.data_segment[:16]
         received_serial = resp.data_segment[16:]
 
-        logger.debug("> BLE Key: %s", hexlify(bytes(received_key)).upper().decode())
-        logger.debug("> Serial: %s", bytes(received_serial).decode())
+        _LOGGER.debug("> BLE Key: %s", hexlify(bytes(received_key)).upper().decode())
+        _LOGGER.debug("> Serial: %s", bytes(received_serial).decode())
         self.crypto.set_ble_data(received_key)
 
         # Ping
@@ -142,12 +142,12 @@ class NinebotClient:
                 if resp.command == Command.PAIR and resp.data_index == 1:
                     break
                 # If we get here, the button on the scooter need to be pressed.
-                logger.info("Please press power button on scooter!")
+                _LOGGER.info("Please press power button on scooter!")
 
         # Pair
         await self.request(Packet(DeviceId.PC, DeviceId.ES_BLE, Command.PAIR, 0, received_serial))
 
-        logger.debug("Connected and authenticated successfully!")
+        _LOGGER.debug("Connected and authenticated successfully!")
 
     async def disconnect(self) -> None:
         if self.client and self.client.is_connected:
@@ -159,14 +159,14 @@ class NinebotClient:
     async def send(self, packet: Packet) -> None:
         """Send a BLE-UART packet to scooter."""
         assert self.client is not None, "Must be connected first."
-        logger.debug("Sending %s", packet)
+        _LOGGER.debug("Sending %s", packet)
         msg = self.crypto.encrypt(packet.pack())
         msg_len = len(msg)
         byte_idx = 0
         while msg_len > 0:
             tmp_len = msg_len if msg_len <= 20 else 20
             buf = msg[byte_idx : byte_idx + tmp_len]
-            logger.debug("Sending chuck %d/%d: %s", byte_idx + tmp_len, len(msg), hexlify(buf).upper().decode())
+            _LOGGER.debug("Sending chuck %d/%d: %s", byte_idx + tmp_len, len(msg), hexlify(buf).upper().decode())
             await self.client.write_gatt_char(NORDIC_UART_RX_UUID, buf)
             msg_len -= tmp_len
             byte_idx += tmp_len
@@ -209,7 +209,7 @@ class NinebotClient:
                         return recv_packet
                 raise TimeoutError(f"Timeout waiting for response for: {request}")
             except TimeoutError:
-                logger.debug("Retrying request ...")
+                _LOGGER.debug("Retrying request ...")
         raise TimeoutError(f"Did not get a response on {request}")
 
     async def read_reg(self, index: CtrlIdx | BmsIdx) -> Any:
@@ -242,16 +242,16 @@ class NinebotClient:
 
         decrypted = self.crypto.decrypt(self.receive_buffer)
         total_len = self.receive_buffer[2] + 7
-        logger.debug(f"Decrypted {len(decrypted)}/{total_len}: {hexlify(decrypted).upper().decode()}")
+        _LOGGER.debug(f"Decrypted {len(decrypted)}/{total_len}: {hexlify(decrypted).upper().decode()}")
         if len(decrypted) == total_len:
             packet = Packet.unpack(decrypted)
             if packet is None:
-                logger.warning("Failed to decode received packet")
+                _LOGGER.warning("Failed to decode received packet")
             else:
                 await self.receive_queue.put(packet)
         elif len(decrypted) >= total_len:
             self.receive_buffer = bytearray()
-            logger.warning(
+            _LOGGER.warning(
                 "Malformed packet received, expected packet size %d bytes, received %d bytes",
                 total_len,
                 len(decrypted),

@@ -15,6 +15,7 @@ from sensor_state_data import (
 from .register import BmsIdx, CtrlIdx, get_register_desc, iter_register
 from .sensor import NinebotBleSensor
 from .transport import NinebotClient, Packet, Command, DeviceId
+from .util import async_scooter_scan
 
 __version__ = "0.0.5"
 
@@ -28,6 +29,7 @@ __all__ = [
     "CtrlIdx",
     "iter_register",
     "get_register_desc",
+    "async_scooter_scan",
     "BinarySensorDeviceClass",
     "BinarySensorValue",
     "SensorDescription",
