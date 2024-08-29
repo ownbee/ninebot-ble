@@ -48,6 +48,8 @@ class DeviceId(enum.Enum):
     """Built-in battery of ES"""
     PC = 0x3D
     """PC upper computer connected through serial port/CAN debugger/IoT equipment"""
+    PHONE = 0x3E
+    """Mobile phone linked through Bluetooth serial port (BLE)"""
 
 
 class Packet:
